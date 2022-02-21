@@ -3,7 +3,6 @@
 #include <Winioctl.h>
 #include <map>
 #include "FileInfo.h"
-#include "DiskInfo.h"
 // CUSNHelper
 
 class CUSNHelper

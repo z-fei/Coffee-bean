@@ -3,7 +3,6 @@
 #include "FileInfo.h"
 #include <vector>
 #include <mutex>
-#include "USNHelper.h"
 #include <map>
 #include <queue>
 
@@ -15,18 +14,14 @@ public:
 	CFileManager();
 	virtual ~CFileManager();
 
-	void Initialize(std::mutex* mutex);
-	void Recurse(CString folderKey, CString filePath);
-
 public:
-	CUSNHelper m_USNHelper;
+	std::vector<CString> m_diskList;
+	std::queue<CString> m_folderQueue;
 
-	std::mutex* m_pMutex;
-	std::vector<CDisplayFileInfo> m_allFiles;
 	std::vector<CDisplayFileInfo> m_findFiles;
-	std::queue<CDisplayFileInfo> m_folders;
+	std::vector<CDisplayFileInfo> m_folderFiles;
 
-	std::map<CString, std::vector<CDisplayFileInfo>> m_folderMap;
+	std::multimap<CString, CFileInfo> m_allFileMap;
 };
 
 

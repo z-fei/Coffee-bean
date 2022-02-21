@@ -8,7 +8,7 @@
 typedef enum SEARCH_EVENT
 {
 	INIT_DISK_COMPLETE = 1,
-	USN_SEARCH_COMPLETE,
+	FILE_SEARCH_COMPLETE,
 	FOLDER_SEARCH_COMPLETE,
 	UPDATE_PROGRESS
 }SEARCH_EVENT;
@@ -28,24 +28,32 @@ public:
 public:
 	//Event handler
 	void AddFunction(SEARCH_EVENT eventName, std::function<void(LPVOID, std::vector<CDisplayFileInfo>, INT)> func);
-	void ExecFunc(SEARCH_EVENT eventName, LPVOID lp, INT progress,CString folderName = NULL);
+	void ExecFunc(SEARCH_EVENT eventName, LPVOID lp, INT progress);
+
+
+	void Initialize(LPVOID lp);
 
 	//Action
-	void Initialize(LPVOID lp);
-	void InitDisk();
-	void DoSearch(CString name);
-	std::vector<CDisplayFileInfo> GetFolderSubFiles(CString& filePath);
+	void OnInitDisk();
+	void OnSearch(CString name);
+	void OnSearchFolder(CString& filePath);
 private:
 	//Task
-	static void DoSearchUSN(LPVOID lp);
+	static void DoSearchAllFileMap(LPVOID lp);
 	static void DoSearchFolder(LPVOID lp);
 	static void DoRraverseFolder(LPVOID lp);
+
+	void Recurse(CString path);
+	void RecurseFolder(CString path);
 
 private:
 	LPVOID m_pView;
 	CFileManager m_fileManager;
 	CThreadManager m_threadManager;
+	
+	INT m_count;
 	CString m_searchName;
+	CString m_searchFolderName;
 
 	std::mutex m_mutex;
 	std::map<SEARCH_EVENT, std::function<void(LPVOID, std::vector<CDisplayFileInfo>, INT)>> m_eventFuncMap;

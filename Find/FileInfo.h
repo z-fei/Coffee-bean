@@ -2,32 +2,20 @@
 
 
 // FileInfo
-class CFileInfoBase
+class CFileInfo
 {
 public:
-	CFileInfoBase();
-	CFileInfoBase(CString fileName, BOOL isFolder);
-	virtual ~CFileInfoBase();
+	CFileInfo();
+	CFileInfo(CString fileName, CString filePath, BOOL isFolder);
+	virtual ~CFileInfo();
 
 public:
 	CString m_fileName;
+	CString m_filePath;
 	BOOL m_isFolder;
 };
 
-class CUSNFileInfo : public CFileInfoBase
-{
-public:
-	CUSNFileInfo();
-	CUSNFileInfo(CString fileName, BOOL isFolder, DWORDLONG fileRefID, DWORDLONG fileParentRefID, CString rootPath);
-	virtual ~CUSNFileInfo();
-
-public:
-	DWORDLONG m_fileRefID;
-	DWORDLONG m_fileParentRefID;
-	CString m_rootPath;
-};
-
-class CDisplayFileInfo : public CFileInfoBase
+class CDisplayFileInfo : public CFileInfo
 {
 public:
 	CDisplayFileInfo();
@@ -36,7 +24,6 @@ public:
 
 public:
 	CString m_fileSize;
-	CString m_filePath;
 	CString m_fileType;
 };
 

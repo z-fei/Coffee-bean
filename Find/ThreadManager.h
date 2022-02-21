@@ -3,6 +3,7 @@
 #include <functional>
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 
 // CThreadManager
@@ -10,10 +11,13 @@
 class CThreadManager
 {
 public:
-	CThreadManager(UINT threadNum, LPVOID lp);
+	CThreadManager(LPVOID lp);
 	virtual ~CThreadManager();
 
 	void SubmitTask(std::function<void(LPVOID)> task);
+
+	std::atomic<int> m_idleThreadNum{ 0 };
+
 private:
 	void InitThreadPool(UINT threadNum);
 
@@ -26,7 +30,6 @@ private:
 	std::mutex m_mutex;
 	std::condition_variable m_taskCV;
 	std::atomic<bool> m_running{ true };
-	std::atomic<int> m_idleThreadNum{ 0 };
 };
 
 

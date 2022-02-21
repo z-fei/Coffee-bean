@@ -5,7 +5,8 @@
 #include "Find.h"
 #include "ThreadManager.h"
 
-unsigned int Hardware_ConCurrency() {
+unsigned int Hardware_ConCurrency() 
+{
 	SYSTEM_INFO si;
 	::GetSystemInfo(&si);
 	return si.dwNumberOfProcessors;
@@ -13,10 +14,11 @@ unsigned int Hardware_ConCurrency() {
 
 // CThreadManager
 
-CThreadManager::CThreadManager(UINT threadNum, LPVOID lp) :
+CThreadManager::CThreadManager(LPVOID lp) :
 	m_lp(lp)
 {
-	InitThreadPool(Hardware_ConCurrency() * 2);
+	INT count = Hardware_ConCurrency() * 2;
+	InitThreadPool(count);
 }
 
 CThreadManager::~CThreadManager()

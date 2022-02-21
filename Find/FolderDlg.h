@@ -10,8 +10,10 @@ class CFolderDlg : public CDialog
 	DECLARE_DYNAMIC(CFolderDlg)
 
 public:
-	CFolderDlg(CWnd* pParent, std::vector<CDisplayFileInfo>);   // standard constructor
+	CFolderDlg(CWnd* pParent, std::vector<CDisplayFileInfo> files);   // standard constructor
 	virtual ~CFolderDlg();
+
+
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
@@ -19,11 +21,14 @@ public:
 #endif
 
 protected:
+	CListCtrl m_listCtrl;
+	std::vector<CDisplayFileInfo> m_files;
+
+	void InitListData();
+
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
-	CListCtrl m_listCtrl;
-	std::vector<CDisplayFileInfo> m_files;
 	DECLARE_MESSAGE_MAP()
 };

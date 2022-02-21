@@ -12,8 +12,6 @@
 #define new DEBUG_NEW
 #endif
 #include <thread>
-#include "FolderDlg.h"
-
 
 
 // CAboutDlg dialog used for App About
@@ -131,11 +129,11 @@ void CFindDlg::InitFunction()
 	m_functionManager.Initialize(this);
 
 	m_functionManager.AddFunction(SEARCH_EVENT(INIT_DISK_COMPLETE), OnInitDiskComplete);
-	m_functionManager.AddFunction(SEARCH_EVENT(USN_SEARCH_COMPLETE), OnUSNSearchComplete);
+	m_functionManager.AddFunction(SEARCH_EVENT(FILE_SEARCH_COMPLETE), OnFileSearchComplete);
 	m_functionManager.AddFunction(SEARCH_EVENT(FOLDER_SEARCH_COMPLETE), OnFolderSearchComplete);
 	m_functionManager.AddFunction(SEARCH_EVENT(UPDATE_PROGRESS), OnProgressBarUpdate);
 
-	m_backgroundWorker.Initialize(&m_functionManager);
+	m_functionManager.OnInitDisk();
 }
 
 void CFindDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -187,17 +185,13 @@ HCURSOR CFindDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CFindDlg::OnUSNSearchComplete(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress)
+void CFindDlg::OnFileSearchComplete(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress)
 {
 	int index = 0;
 	auto pDlg = (CFindDlg*)lp;
 	pDlg->m_listControl.DeleteAllItems();
-	BOOL isContainFolder = FALSE;
-	for (std::vector<CDisplayFileInfo>::iterator it = files.begin(); it < files.end(); ++it)
+	for (auto it = files.begin(); it < files.end(); ++it)
 	{
-		if ((GetFileAttributes(it->m_filePath) & FILE_ATTRIBUTE_DIRECTORY) != 0) 
-			isContainFolder = TRUE;
-
 		pDlg->m_listControl.InsertItem(index, it->m_fileName);
 		pDlg->m_listControl.SetItemText(index, 1, it->m_fileSize);
 		pDlg->m_listControl.SetItemText(index, 2, it->m_fileType);
@@ -205,19 +199,20 @@ void CFindDlg::OnUSNSearchComplete(LPVOID lp, std::vector<CDisplayFileInfo> file
 		index++;
 	}
 
-	pDlg->m_state.SetWindowTextW(_T("State: File complete!"));
-
-	if (isContainFolder)
-	{
-		pDlg->m_state.SetWindowTextW(_T("State: Searching folder..."));
-	}
+	pDlg->m_state.SetWindowTextW(_T("State: Ready!"));
+	pDlg->m_progress.SetPos(progress);
+	pDlg->m_progress.ShowWindow(FALSE);
 }
 
 void CFindDlg::OnFolderSearchComplete(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress)
 {
 	auto pDlg = (CFindDlg*)lp;
+
 	pDlg->m_state.SetWindowTextW(_T("State: Ready!"));
 	pDlg->m_progress.ShowWindow(FALSE);
+
+	CFolderDlg folderDlg(pDlg, files);
+	folderDlg.DoModal();
 }
 
 void CFindDlg::OnInitDiskComplete(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress)
@@ -238,8 +233,10 @@ void CFindDlg::OnBnClickedButtonSearch()
 	CString str;
 	m_folderPath.GetWindowTextW(str);
 	if (str.IsEmpty()) return;
-	m_functionManager.DoSearch(str);
+	m_functionManager.OnSearch(str);
+
 	m_state.SetWindowTextW(_T("State: Searching file..."));
+	m_progress.SetPos(0);
 	m_progress.ShowWindow(TRUE);
 }
 
@@ -251,15 +248,8 @@ void CFindDlg::OnNMDblclkList(NMHDR* pNMHDR, LRESULT* pResult)
 	CString path = m_listControl.GetItemText(index, 3);
 	if ((GetFileAttributes(path) & FILE_ATTRIBUTE_DIRECTORY) == 0) return;
 
-	std::vector<CDisplayFileInfo> files = m_functionManager.GetFolderSubFiles(path);
-
-	if (files.empty())
-	{
-		AfxMessageBox(_T("Please wait a moment!"));
-	}
-
-	CFolderDlg folderDlg(this, files);
-	folderDlg.DoModal();
+	m_functionManager.OnSearchFolder(path);
+	m_state.SetWindowTextW(_T("State: Searching folder..."));
 
 	*pResult = 0;
 }

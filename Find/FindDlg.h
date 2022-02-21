@@ -4,7 +4,7 @@
 
 #pragma once
 #include "FunctionManager.h"
-#include "BackgroundWorker.h"
+#include "FolderDlg.h"
 
 // CFindDlg dialog
 class CFindDlg : public CDialogEx
@@ -21,8 +21,6 @@ public:
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
-	CFunctionManager m_functionManager;
-	CBackgroundWorker m_backgroundWorker;
 // Implementation
 protected:
 	HICON m_hIcon;
@@ -31,6 +29,7 @@ protected:
 	CStatic m_state;
 	CProgressCtrl m_progress;
 
+	CFunctionManager m_functionManager;
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
@@ -45,7 +44,7 @@ public:
 	afx_msg void OnBnClickedButtonSearch();
 	afx_msg void OnNMDblclkList(NMHDR* pNMHDR, LRESULT* pResult);
 
-	static void OnUSNSearchComplete(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress);
+	static void OnFileSearchComplete(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress);
 	static void OnFolderSearchComplete(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress);
 	static void OnInitDiskComplete(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress);
 	static void OnProgressBarUpdate(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress);
