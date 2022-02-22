@@ -13,16 +13,11 @@ typedef enum SEARCH_EVENT
 	UPDATE_PROGRESS
 }SEARCH_EVENT;
 
-typedef enum SEARCH_TASK
-{
-	SEARCH_FOLDER = 1,
-}SEARCH_TASK;
-
 // CFunctionManager
 class CFunctionManager
 {
 public:
-	CFunctionManager();
+	CFunctionManager(LPVOID lp);
 	virtual ~CFunctionManager();
 
 public:
@@ -30,13 +25,10 @@ public:
 	void AddFunction(SEARCH_EVENT eventName, std::function<void(LPVOID, std::vector<CDisplayFileInfo>, INT)> func);
 	void ExecFunc(SEARCH_EVENT eventName, LPVOID lp, INT progress);
 
-
-	void Initialize(LPVOID lp);
-
 	//Action
-	void OnInitDisk();
-	void OnSearch(CString name);
-	void OnSearchFolder(CString& filePath);
+	BOOL OnInitDisk();
+	BOOL OnSearch(CString name);
+	BOOL OnSearchFolder(CString& filePath);
 private:
 	//Task
 	static void DoSearchAllFileMap(LPVOID lp);
@@ -46,18 +38,36 @@ private:
 	void Recurse(CString path);
 	void RecurseFolder(CString path);
 
+	ULONGLONG GetFileSize(CString path) const;
+
+	ULONGLONG GetTotalSize();
+	void SetTotalSize(ULONGLONG size);
+	void ResetTotalSize();
+
+	void AddTaskCount();
+	void SubTaskCount();
+	void ResetTaskCount();
+	ULONGLONG GetTaskCount();
+
+	void AddProgressCount();
+	void SubProgressCount();
+	void ResetProgressCount();
+	ULONGLONG GetProgressCount();
+
 private:
 	LPVOID m_pView;
 	CFileManager m_fileManager;
 	CThreadManager m_threadManager;
 	
-	INT m_count;
+	UINT m_progressCount;
+	UINT m_taskCount;
+	ULONGLONG m_totalSize;
+
 	CString m_searchName;
 	CString m_searchFolderName;
 
 	std::mutex m_mutex;
 	std::map<SEARCH_EVENT, std::function<void(LPVOID, std::vector<CDisplayFileInfo>, INT)>> m_eventFuncMap;
-	std::map<SEARCH_TASK, std::function<void(LPVOID, std::vector<CDisplayFileInfo>)>> m_taskFuncMap;
 };
 
 

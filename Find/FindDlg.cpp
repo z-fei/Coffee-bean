@@ -52,7 +52,8 @@ END_MESSAGE_MAP()
 
 
 CFindDlg::CFindDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_FIND_DIALOG, pParent)
+	: CDialogEx(IDD_FIND_DIALOG, pParent),
+	  m_functionManager(this)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -77,6 +78,14 @@ END_MESSAGE_MAP()
 
 
 // CFindDlg message handlers
+BOOL CFindDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_ESCAPE) return TRUE;
+	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN) return TRUE;
+	else
+		return CDialog::PreTranslateMessage(pMsg);
+}
+
 
 BOOL CFindDlg::OnInitDialog()
 {
@@ -126,8 +135,6 @@ void CFindDlg::OnInitListControl()
 
 void CFindDlg::InitFunction()
 {
-	m_functionManager.Initialize(this);
-
 	m_functionManager.AddFunction(SEARCH_EVENT(INIT_DISK_COMPLETE), OnInitDiskComplete);
 	m_functionManager.AddFunction(SEARCH_EVENT(FILE_SEARCH_COMPLETE), OnFileSearchComplete);
 	m_functionManager.AddFunction(SEARCH_EVENT(FOLDER_SEARCH_COMPLETE), OnFolderSearchComplete);
@@ -225,7 +232,7 @@ void CFindDlg::OnInitDiskComplete(LPVOID lp, std::vector<CDisplayFileInfo> files
 void CFindDlg::OnProgressBarUpdate(LPVOID lp, std::vector<CDisplayFileInfo> files, INT progress)
 {
 	auto pDlg = (CFindDlg*)lp;
-	pDlg->m_progress.SetPos(progress);
+	pDlg->m_progress.SetPos(100 * progress / 100000);
 }
 
 void CFindDlg::OnBnClickedButtonSearch()
@@ -233,11 +240,16 @@ void CFindDlg::OnBnClickedButtonSearch()
 	CString str;
 	m_folderPath.GetWindowTextW(str);
 	if (str.IsEmpty()) return;
-	m_functionManager.OnSearch(str);
-
-	m_state.SetWindowTextW(_T("State: Searching file..."));
-	m_progress.SetPos(0);
-	m_progress.ShowWindow(TRUE);
+	if (m_functionManager.OnSearch(str))
+	{
+		m_state.SetWindowTextW(_T("State: Searching file..."));
+		m_progress.SetPos(0);
+		m_progress.ShowWindow(TRUE);
+	}
+	else
+	{
+		AfxMessageBox(_T("Please wait for init"));
+	}
 }
 
 void CFindDlg::OnNMDblclkList(NMHDR* pNMHDR, LRESULT* pResult)

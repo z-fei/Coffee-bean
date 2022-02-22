@@ -17,8 +17,7 @@ unsigned int Hardware_ConCurrency()
 CThreadManager::CThreadManager(LPVOID lp) :
 	m_lp(lp)
 {
-	INT count = Hardware_ConCurrency() * 2;
-	InitThreadPool(count);
+	InitThreadPool(Hardware_ConCurrency() * 2);
 }
 
 CThreadManager::~CThreadManager()

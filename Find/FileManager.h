@@ -11,16 +11,34 @@
 class CFileManager
 {
 public:
-	CFileManager();
+	CFileManager(std::mutex* pMutex);
 	virtual ~CFileManager();
 
-public:
-	std::vector<CString> m_diskList;
-	std::queue<CString> m_folderQueue;
+	//Share memory
+	ULONGLONG GetAllFileMapSize();
+	void InsertToAllFileMap(CString fileName, CFileInfo fileInfo);
+	BOOL GetAllFileMapEqualRange(CString searchName,
+		std::pair<std::multimap<CString, CFileInfo>::iterator, std::multimap<CString, CFileInfo>::iterator>& itEqual);
 
+	std::vector<CDisplayFileInfo> GetFindFiles();
+	void PushFindFiles(CDisplayFileInfo fileInfo);
+	void RelaseFindFiles();
+
+	std::vector<CDisplayFileInfo> GetFolderFiles();
+	void PushFolderFiles(CDisplayFileInfo fileInfo);
+	void RelaseFolderFiles();
+
+	CString GetFolderFromQueue();
+	void PushFolderToQueue(CString folder);
+
+	std::vector<CString> m_diskList;
+
+private:
+	std::mutex* m_pMutex;
+
+	std::queue<CString> m_folderQueue;
 	std::vector<CDisplayFileInfo> m_findFiles;
 	std::vector<CDisplayFileInfo> m_folderFiles;
-
 	std::multimap<CString, CFileInfo> m_allFileMap;
 };
 

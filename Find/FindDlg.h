@@ -32,6 +32,7 @@ protected:
 	CFunctionManager m_functionManager;
 
 	// Generated message map functions
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual BOOL OnInitDialog();
 	void OnInitListControl();
 	void InitFunction();

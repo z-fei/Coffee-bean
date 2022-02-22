@@ -22,6 +22,7 @@ public:
 
 protected:
 	CListCtrl m_listCtrl;
+	CStatic m_totalSize;
 	std::vector<CDisplayFileInfo> m_files;
 
 	void InitListData();
@@ -31,4 +32,6 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnLvnGetdispinfoList(NMHDR* pNMHDR, LRESULT* pResult);
 };
