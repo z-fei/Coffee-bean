@@ -10,3 +10,6 @@
   2. Using a thread pool to recursive traversal the folder.
   3. Using MVC to realize high polymerization and low coupling.
   4. Use virtual lists to improve display speed.
+
+
+![image](https://github.com/z-fei/Coffee-bean/blob/master/Sequence%20diagram.png?raw=true)
