@@ -68,7 +68,7 @@ private:
 	
 	INT m_progressCount;
 	INT m_taskCount;
-	ULONGLONG m_recurseCount;
+	INT m_recurseCount;
 	ULONGLONG m_totalSize;
 
 	CString m_searchName;
