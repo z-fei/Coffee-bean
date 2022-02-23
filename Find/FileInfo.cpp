@@ -5,6 +5,10 @@
 #include "Find.h"
 #include "FileInfo.h"
 
+CDisplayFileInfo::CDisplayFileInfo()
+{
+}
+
 CDisplayFileInfo::CDisplayFileInfo(CString fileName, BOOL isFolder, CString fileSize, CString filePath) :
 	CFileInfo(fileName, filePath, isFolder),
 	m_fileSize(fileSize)

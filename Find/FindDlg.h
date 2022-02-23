@@ -28,13 +28,14 @@ protected:
 	CEdit m_folderPath;
 	CStatic m_state;
 	CProgressCtrl m_progress;
+	CButton m_button;
 
 	CFunctionManager m_functionManager;
 
 	// Generated message map functions
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual BOOL OnInitDialog();
-	void OnInitListControl();
+	void InitControls();
 	void InitFunction();
 
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);

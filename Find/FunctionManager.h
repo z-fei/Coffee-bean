@@ -4,7 +4,6 @@
 #include "FileManager.h"
 #include "ThreadManager.h"
 
-
 typedef enum SEARCH_EVENT
 {
 	INIT_DISK_COMPLETE = 1,
@@ -38,7 +37,9 @@ private:
 	void Recurse(CString path);
 	void RecurseFolder(CString path);
 
-	ULONGLONG GetFileSize(CString path) const;
+	//Share memory
+	ULONGLONG GetFileSize(CString path);
+	CString FormatFileSize(ULONGLONG size);
 
 	ULONGLONG GetTotalSize();
 	void SetTotalSize(ULONGLONG size);
@@ -49,18 +50,25 @@ private:
 	void ResetTaskCount();
 	ULONGLONG GetTaskCount();
 
+	void AddRecurseCount();
+	void SubRecurseCount();
+	INT GetRecurseCount();
+
 	void AddProgressCount();
 	void SubProgressCount();
 	void ResetProgressCount();
-	ULONGLONG GetProgressCount();
+	void ResetProgressCountIfLimit();
+	INT GetProgressCount();
+	INT GetRawProgressCount();
 
 private:
 	LPVOID m_pView;
 	CFileManager m_fileManager;
 	CThreadManager m_threadManager;
 	
-	UINT m_progressCount;
-	UINT m_taskCount;
+	INT m_progressCount;
+	INT m_taskCount;
+	ULONGLONG m_recurseCount;
 	ULONGLONG m_totalSize;
 
 	CString m_searchName;

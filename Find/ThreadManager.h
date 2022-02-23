@@ -5,7 +5,6 @@
 #include <mutex>
 #include <atomic>
 
-
 // CThreadManager
 
 class CThreadManager

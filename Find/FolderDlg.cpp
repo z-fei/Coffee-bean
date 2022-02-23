@@ -5,9 +5,7 @@
 #include "FolderDlg.h"
 #include "afxdialogex.h"
 
-
 // CFolderDlg dialog
-
 IMPLEMENT_DYNAMIC(CFolderDlg, CDialog)
 
 CFolderDlg::CFolderDlg(CWnd* pParent, std::vector<CDisplayFileInfo> files)
@@ -41,7 +39,7 @@ void CFolderDlg::InitListData()
 {
 	//Insert column
 	m_listCtrl.InsertColumn(0, _T("Name"), LVCFMT_LEFT, 100);
-	m_listCtrl.InsertColumn(1, _T("Size"), LVCFMT_LEFT, 50);
+	m_listCtrl.InsertColumn(1, _T("Size"), LVCFMT_LEFT, 100);
 	m_listCtrl.InsertColumn(2, _T("Type"), LVCFMT_LEFT, 50);
 	m_listCtrl.InsertColumn(3, _T("Path"), LVCFMT_LEFT, 200);
 	m_listCtrl.InsertItem(0, LPSTR_TEXTCALLBACK);
@@ -50,7 +48,7 @@ void CFolderDlg::InitListData()
 	m_listCtrl.InsertItem(3, LPSTR_TEXTCALLBACK);
 
 	if (m_files.size() > 0)
-		m_listCtrl.SetItemCountEx(m_files.size() - 1, LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
+		m_listCtrl.SetItemCountEx((int)(m_files.size() - 1), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
 
 	m_totalSize.SetWindowTextW(_T("Total size: ") + m_files.back().m_fileSize);
 }
@@ -66,7 +64,6 @@ void CFolderDlg::OnLvnGetdispinfoList(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NMLVDISPINFO* pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
 	LV_ITEM* pItem = &(pDispInfo)->item;
-
 	int iItemIndx = pItem->iItem;
 
 	if (pItem->mask & LVIF_TEXT)

@@ -66,6 +66,7 @@ void CFindDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT1, m_folderPath);
 	DDX_Control(pDX, IDC_STATIC_STATE, m_state);
 	DDX_Control(pDX, IDC_PROGRESS1, m_progress);
+	DDX_Control(pDX, IDC_BUTTON_SEARCH, m_button);
 }
 
 BEGIN_MESSAGE_MAP(CFindDlg, CDialogEx)
@@ -81,7 +82,11 @@ END_MESSAGE_MAP()
 BOOL CFindDlg::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_ESCAPE) return TRUE;
-	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN) return TRUE;
+	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN)
+	{
+		PostMessage(WM_COMMAND, MAKEWPARAM(IDC_BUTTON_SEARCH, BN_CLICKED), (LPARAM)m_button.m_hWnd);
+		return TRUE;
+	}
 	else
 		return CDialog::PreTranslateMessage(pMsg);
 }
@@ -117,20 +122,24 @@ BOOL CFindDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
-	m_progress.SetRange(0, 100);
-	OnInitListControl();
+	ModifyStyle(m_hWnd, WS_THICKFRAME, 0, 0);
+	InitControls();
 	InitFunction();
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
-void CFindDlg::OnInitListControl()
+void CFindDlg::InitControls()
 {
+	m_listControl.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_HEADERDRAGDROP);
+
 	//Insert column
 	m_listControl.InsertColumn(0, _T("Name"), LVCFMT_LEFT, 100);
-	m_listControl.InsertColumn(1, _T("Size"), LVCFMT_LEFT, 50);
+	m_listControl.InsertColumn(1, _T("Size"), LVCFMT_LEFT, 100);
 	m_listControl.InsertColumn(2, _T("Type"), LVCFMT_LEFT, 50);
-	m_listControl.InsertColumn(3, _T("Path"), LVCFMT_LEFT, 200);
+	m_listControl.InsertColumn(3, _T("Path"), LVCFMT_LEFT, 250);
+
+	m_progress.SetRange(0, 100);
 }
 
 void CFindDlg::InitFunction()
@@ -239,12 +248,16 @@ void CFindDlg::OnBnClickedButtonSearch()
 {
 	CString str;
 	m_folderPath.GetWindowTextW(str);
-	if (str.IsEmpty()) return;
+	if (str.IsEmpty())
+	{
+		m_listControl.DeleteAllItems();
+		return;
+	}
 	if (m_functionManager.OnSearch(str))
 	{
-		m_state.SetWindowTextW(_T("State: Searching file..."));
+		m_state.SetWindowTextW(_T("State: Ready!"));
 		m_progress.SetPos(0);
-		m_progress.ShowWindow(TRUE);
+		m_progress.ShowWindow(FALSE);
 	}
 	else
 	{
@@ -258,10 +271,14 @@ void CFindDlg::OnNMDblclkList(NMHDR* pNMHDR, LRESULT* pResult)
 	if (index == -1) return;
 
 	CString path = m_listControl.GetItemText(index, 3);
+	m_listControl.SetSelectionMark(-1);
+	
 	if ((GetFileAttributes(path) & FILE_ATTRIBUTE_DIRECTORY) == 0) return;
 
 	m_functionManager.OnSearchFolder(path);
 	m_state.SetWindowTextW(_T("State: Searching folder..."));
+	m_progress.SetPos(0);
+	m_progress.ShowWindow(TRUE);
 
 	*pResult = 0;
 }

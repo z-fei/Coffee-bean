@@ -5,6 +5,9 @@
 #include "Find.h"
 #include "FunctionManager.h"
 
+#define KB 1024
+#define MB (1024*KB)
+#define GB (1024*MB)
 
 // CFunctionManager
 CFunctionManager::CFunctionManager(LPVOID lp) :
@@ -45,7 +48,7 @@ void CFunctionManager::ResetTotalSize()
     m_totalSize = 0;
 }
 
-ULONGLONG CFunctionManager::GetFileSize(CString path) const
+ULONGLONG CFunctionManager::GetFileSize(CString path)
 {
     LONGLONG size = 0;
     if (path.IsEmpty() || path.GetLength() > 256)
@@ -56,6 +59,29 @@ ULONGLONG CFunctionManager::GetFileSize(CString path) const
             size = status.m_size;
 
     return size;
+}
+
+CString CFunctionManager::FormatFileSize(ULONGLONG size)
+{
+    CString unit;
+    if (size > GB)
+    {
+        unit.Format(_T("%0.2f GB"), (double)size / GB);
+    }
+    else if (size > MB)
+    {
+        unit.Format(_T("%0.2f MB"), (double)size / MB);
+    }
+    else if (size > KB)
+    {
+        unit.Format(_T("%0.2f KB"), (double)size / KB);
+    }
+    else
+    {
+        unit.Format(_T("%I64u Byte"), size);
+    }
+
+    return unit;
 }
 
 void CFunctionManager::SubTaskCount()
@@ -76,16 +102,44 @@ ULONGLONG CFunctionManager::GetTaskCount()
     return m_taskCount;
 }
 
+void CFunctionManager::AddRecurseCount()
+{
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    if (m_recurseCount == INT_MAX)
+        m_recurseCount = 1;
+    else
+        m_recurseCount++;
+}
+
+void CFunctionManager::SubRecurseCount()
+{
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    m_recurseCount--;
+}
+
+INT CFunctionManager::GetRecurseCount()
+{
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    return m_recurseCount;
+}
+
 void CFunctionManager::ResetProgressCount()
 {
     std::unique_lock<std::mutex> lock{ m_mutex };
     m_progressCount = 0;
 }
 
+void CFunctionManager::ResetProgressCountIfLimit()
+{
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    if (m_progressCount >= 100000)
+        m_progressCount = 0;
+}
+
 void CFunctionManager::AddProgressCount()
 {
     std::unique_lock<std::mutex> lock{ m_mutex };
-    m_progressCount++;
+    m_progressCount += 10;
 }
 
 void CFunctionManager::SubProgressCount()
@@ -94,7 +148,7 @@ void CFunctionManager::SubProgressCount()
     m_progressCount--;
 }
 
-ULONGLONG CFunctionManager::GetProgressCount()
+INT CFunctionManager::GetProgressCount()
 {
     ULONGLONG count = m_fileManager.GetAllFileMapSize();
 
@@ -117,18 +171,35 @@ ULONGLONG CFunctionManager::GetProgressCount()
     return m_progressCount;
 }
 
+INT CFunctionManager::GetRawProgressCount()
+{
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    return m_progressCount;
+}
+
 void CFunctionManager::Recurse(CString path)
 {
-    CFileFind find;
-    BOOL isFind = find.FindFile(path + _T("\\\*.*"));
+    AddRecurseCount();
+    if (path.IsEmpty())
+    {
+        SubRecurseCount();
+        return;
+    }
 
+    CFileFind find;
+    BOOL isFind = find.FindFile(path + _T("\\*.*"));
     while (isFind)
     {
         isFind = find.FindNextFile();
         if (!find.IsDots())
         {
+            CString extName = PathFindExtension(find.GetFileName());
+            CString fileName = find.GetFileName();
+            if (!extName.IsEmpty())
+                fileName = find.GetFileName().Left(find.GetFileName().GetLength() - extName.GetLength());
+        	
             CFileInfo fileInfo(find.GetFileName(), find.GetFilePath(), find.IsDirectory());
-            m_fileManager.InsertToAllFileMap(find.GetFileName(), fileInfo);
+            m_fileManager.InsertToAllFileMap(fileName.MakeLower(), fileInfo);
 
             if (find.IsDirectory())
             {
@@ -139,23 +210,28 @@ void CFunctionManager::Recurse(CString path)
                     AddTaskCount();
                 }
                 else
-                {
                     Recurse(find.GetFilePath());
-                }
             }
             else
-            {
                 Recurse(find.GetFilePath());
-            }
         }
     }
+
+    SubRecurseCount();
+    return;
 }
 
 void CFunctionManager::RecurseFolder(CString path)
 {
-    CFileFind find;
-    BOOL isFind = find.FindFile(path + _T("\\\*.*"));
+    AddRecurseCount();
+    if (path.IsEmpty())
+    {
+        SubRecurseCount();
+        return;
+    }
 
+    CFileFind find;
+    BOOL isFind = find.FindFile(path + _T("\\*.*"));
     while (isFind)
     {
         isFind = find.FindNextFile();
@@ -163,7 +239,7 @@ void CFunctionManager::RecurseFolder(CString path)
         {
             CString size;
             ULONGLONG uSize = GetFileSize(find.GetFilePath());
-            size.Format(_T("%I64u %s"), uSize, _T(" bytes"));
+            size = FormatFileSize(GetFileSize(find.GetFilePath()));
             CDisplayFileInfo fileInfo(find.GetFileName(), find.IsDirectory(), size, find.GetFilePath());
             m_fileManager.PushFolderFiles(fileInfo);
             SetTotalSize(uSize);
@@ -177,16 +253,15 @@ void CFunctionManager::RecurseFolder(CString path)
                     AddTaskCount();
                 }
                 else
-                {
                     RecurseFolder(find.GetFilePath());
-                }
             }
             else
-            {
                 RecurseFolder(find.GetFilePath());
-            }
         }
     }
+
+    SubRecurseCount();
+    return;
 }
 
 void CFunctionManager::AddFunction(SEARCH_EVENT eventName, std::function<void(LPVOID, std::vector<CDisplayFileInfo>, INT)> func)
@@ -196,9 +271,11 @@ void CFunctionManager::AddFunction(SEARCH_EVENT eventName, std::function<void(LP
 
 void CFunctionManager::ExecFunc(SEARCH_EVENT eventName, LPVOID lp, INT progress)
 {
+    auto it = m_eventFuncMap.find(eventName);
+    if (it == m_eventFuncMap.end()) return;
+
+    switch (eventName)
     {
-        switch (eventName)
-        {
         case INIT_DISK_COMPLETE:
             m_eventFuncMap[eventName](lp, m_fileManager.GetFindFiles(), progress);
             break;
@@ -213,27 +290,43 @@ void CFunctionManager::ExecFunc(SEARCH_EVENT eventName, LPVOID lp, INT progress)
             break;
         default:
             break;
-        }
     }
 }
 
 void CFunctionManager::DoSearchAllFileMap(LPVOID lp)
 {
     auto functionManager = (CFunctionManager*)lp;
+
+    CString extName = PathFindExtension(functionManager->m_searchName);
+    CString fileName = functionManager->m_searchName;
+    if (!extName.IsEmpty())
+        fileName = fileName.Left(fileName.GetLength() - extName.GetLength());
+		
     std::pair<std::multimap<CString, CFileInfo>::iterator, std::multimap<CString, CFileInfo>::iterator> itMap;
-    if (functionManager->m_fileManager.GetAllFileMapEqualRange(functionManager->m_searchName, itMap))
+    if (functionManager->m_fileManager.GetAllFileMapEqualRange(fileName.MakeLower(), itMap))
     {
         for (auto it = itMap.first; it != itMap.second; it++)
         {
             CString size;
-            size.Format(_T("%I64u %s"), functionManager->GetFileSize(it->second.m_filePath), _T("bytes"));
-            CDisplayFileInfo fileInfo(it->second.m_fileName, it->second.m_isFolder, size, it->second.m_filePath);
-            functionManager->m_fileManager.PushFindFiles(fileInfo);
+            if (!extName.IsEmpty())
+            {
+                if (it->second.m_fileName.MakeLower().CompareNoCase(functionManager->m_searchName.MakeLower()) == 0)
+                {
+                    size = functionManager->FormatFileSize(functionManager->GetFileSize(it->second.m_filePath));
+                    CDisplayFileInfo fileInfo(it->second.m_fileName, it->second.m_isFolder, size, it->second.m_filePath);
+                    functionManager->m_fileManager.PushFindFiles(fileInfo);
+                }
+            }
+            else
+            {
+                size = functionManager->FormatFileSize(functionManager->GetFileSize(it->second.m_filePath));
+                CDisplayFileInfo fileInfo(it->second.m_fileName, it->second.m_isFolder, size, it->second.m_filePath);
+                functionManager->m_fileManager.PushFindFiles(fileInfo);
+            }
         }
     }
 
     functionManager->ExecFunc(SEARCH_EVENT(FILE_SEARCH_COMPLETE), functionManager->m_pView, 100);
-    functionManager->m_fileManager.RelaseFindFiles();
 }
 
 void CFunctionManager::DoSearchFolder(LPVOID lp)
@@ -244,15 +337,20 @@ void CFunctionManager::DoSearchFolder(LPVOID lp)
     functionManager->RecurseFolder(path);
     functionManager->SubTaskCount();
 
-    if (functionManager->GetTaskCount() == 0)
+    functionManager->AddProgressCount();
+    functionManager->ExecFunc(SEARCH_EVENT(UPDATE_PROGRESS), functionManager->m_pView, functionManager->GetRawProgressCount());
+    functionManager->ResetProgressCountIfLimit();
+
+    if (functionManager->GetTaskCount() == 0 && functionManager->GetRecurseCount() == 0)
     {
         CString size;
-        size.Format(_T("%I64u %s"), functionManager->GetTotalSize(), _T(" bytes"));
+        size = functionManager->FormatFileSize(functionManager->GetTotalSize());
         CDisplayFileInfo fileInfo(_T(""), TRUE, size, _T(""));
         functionManager->m_fileManager.PushFolderFiles(fileInfo);
-
-        functionManager->ExecFunc(SEARCH_EVENT(FOLDER_SEARCH_COMPLETE), functionManager->m_pView, 0);
+ 
+        functionManager->ExecFunc(SEARCH_EVENT(FOLDER_SEARCH_COMPLETE), functionManager->m_pView, 100);
         functionManager->ResetTaskCount();
+        functionManager->ResetProgressCount();
     }
 }
 
@@ -263,14 +361,14 @@ void CFunctionManager::DoRraverseFolder(LPVOID lp)
     CString path = functionManager->m_fileManager.GetFolderFromQueue();
     functionManager->Recurse(path);
 
-    ULONGLONG progress = functionManager->GetProgressCount();
-    functionManager->ExecFunc(SEARCH_EVENT(UPDATE_PROGRESS), functionManager->m_pView, progress);
+    functionManager->ExecFunc(SEARCH_EVENT(UPDATE_PROGRESS), functionManager->m_pView, functionManager->GetProgressCount());
     functionManager->SubTaskCount();
 
-    if (functionManager->GetTaskCount() == 0)
+    if (functionManager->GetTaskCount() == 0 && functionManager->GetRecurseCount() == 0)
     {
         functionManager->ExecFunc(SEARCH_EVENT(INIT_DISK_COMPLETE), functionManager->m_pView, 100);
         functionManager->ResetTaskCount();
+        functionManager->ResetProgressCount();
     }
 }
 
@@ -300,8 +398,15 @@ BOOL CFunctionManager::OnSearch(CString searchName)
 {
     if (GetTaskCount() != 0)
         return FALSE;
+	
+    if (m_searchName.Compare(searchName) == 0)
+    {
+        ExecFunc(SEARCH_EVENT(FILE_SEARCH_COMPLETE), m_pView, 0);
+        return TRUE;
+    }
 
-    m_searchName = searchName;
+    m_searchName = searchName;	
+    m_fileManager.RelaseFindFiles();
     m_threadManager.SubmitTask(DoSearchAllFileMap);
 
     return TRUE;

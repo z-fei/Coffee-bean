@@ -13,7 +13,6 @@ unsigned int Hardware_ConCurrency()
 }
 
 // CThreadManager
-
 CThreadManager::CThreadManager(LPVOID lp) :
 	m_lp(lp)
 {
@@ -24,6 +23,12 @@ CThreadManager::~CThreadManager()
 {
 	m_running = false;
 	m_taskCV.notify_all();
+
+    for (std::thread& thread : m_threads)
+	{
+		if (thread.joinable())
+			thread.join();
+	}
 }
 
 void CThreadManager::SubmitTask(std::function<void(LPVOID)> task)
