@@ -417,7 +417,7 @@ BOOL CFunctionManager::OnSearchFolder(CString& filePath)
     if (m_searchFolderName.Compare(filePath) == 0)
     {
         ExecFunc(SEARCH_EVENT(FOLDER_SEARCH_COMPLETE), m_pView, 0);
-        return TRUE;
+        return FALSE;
     }
 
     m_searchFolderName = filePath;
