@@ -275,10 +275,12 @@ void CFindDlg::OnNMDblclkList(NMHDR* pNMHDR, LRESULT* pResult)
 	
 	if ((GetFileAttributes(path) & FILE_ATTRIBUTE_DIRECTORY) == 0) return;
 
-	m_functionManager.OnSearchFolder(path);
-	m_state.SetWindowTextW(_T("State: Searching folder..."));
-	m_progress.SetPos(0);
-	m_progress.ShowWindow(TRUE);
-
+	if (m_functionManager.OnSearchFolder(path))
+	{
+	    m_state.SetWindowTextW(_T("State: Searching folder..."));
+	    m_progress.SetPos(0);
+	    m_progress.ShowWindow(TRUE);
+	}
+	
 	*pResult = 0;
 }
