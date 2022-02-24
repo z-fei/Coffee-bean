@@ -12,6 +12,7 @@
   4. Use virtual lists to improve display speed.
 
 # Note
-  If there is a warning about V142 tool, please replace v142 to v141(your build tool version) the Find.vcxproj file, then retarget solution. 
+  If there is a warning about V142 tool, please replace v142 to v141(your build tool version) in the Find.vcxproj file, then retarget solution. 
+  
 
 ![image](https://github.com/z-fei/Coffee-bean/blob/master/Sequence%20diagram.png?raw=true)
